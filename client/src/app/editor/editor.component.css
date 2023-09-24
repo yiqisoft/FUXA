@@ -68,20 +68,20 @@
     padding-right: 0px;
     border-top: 1px solid var(--toolboxBorder);
     box-shadow: 0px 1px 3px 0px #000;
- }
+}
 
- .svg-workarea-flybar-h span {
-     padding-top: 5px !important;
-     padding-left: 3px;
-     font-size: 11px;
- }
+.svg-workarea-flybar-h span {
+    padding-top: 5px !important;
+    padding-left: 3px;
+    font-size: 11px;
+}
 
- /* .svg-workarea-flybar-h:hover {
+/* .svg-workarea-flybar-h:hover {
  } */
 
- .svg-workarea-flybar-h:enabled .svg-workarea-flybar-h::selection{
-     color: rgba(255,255,255,1);
- }
+.svg-workarea-flybar-h:enabled .svg-workarea-flybar-h::selection {
+    color: rgba(255, 255, 255, 1);
+}
 
 .svg-workarea-fly-p {
     box-shadow: none !important;
@@ -210,8 +210,10 @@
     background: rgba(0, 0, 0, 0.1);
 }
 
-.svg-tool-active, .svg-tool-active:active, .svg-tool-active:hover {
-    background-color: rgba(48,89,175,1);
+.svg-tool-active,
+.svg-tool-active:active,
+.svg-tool-active:hover {
+    background-color: rgba(48, 89, 175, 1);
 }
 
 .leave-header-area {
@@ -247,12 +249,12 @@
 }
 
 .main-btn .to-top {
-    display: inline-block;    ;
+    display: inline-block;
     height: 34px;
-    width: 34px;    
+    width: 34px;
 }
 
-.main-btn .to-bottom  {
+.main-btn .to-bottom {
     display: inline-block;
     height: 34px;
     width: 34px;
@@ -265,7 +267,7 @@
 }
 
 .main-btn .group {
-    background: url("/assets/images/group.svg") no-repeat center center;
+    background: url("assets/images/group.svg") no-repeat center center;
     background-size: contain;
     display: inline-block;
     height: 34px;
@@ -273,7 +275,7 @@
 }
 
 .main-btn .ungroup {
-    background: url("/assets/images/ungroup.svg") no-repeat center center;
+    background: url("assets/images/ungroup.svg") no-repeat center center;
     background-size: contain;
     display: inline-block;
     height: 34px;
@@ -337,7 +339,7 @@
     padding-left: 4px;
     font-size: 16px;
     line-height: 20px;
-    opacity:0.5;
+    opacity: 0.5;
 }
 
 .leftbar-item mat-icon {
@@ -513,174 +515,174 @@ li {
 }
 
 select#start_marker option[value="A"] {
-    background: url("/assets/images/select-pointer.svg");
+    background: url("assets/images/select-pointer.svg");
 }
 select#start_marker option[value="B"] {
-    background: url("/assets/images/select-pointer.svg");
+    background: url("assets/images/select-pointer.svg");
 }
 select#start_marker option[value="C"] {
-    background: url("/assets/images/select-pointer.svg");
+    background: url("assets/images/select-pointer.svg");
 }
 select#start_marker option[value="D"] {
-    background: url("/assets/images/select-pointer.svg");
+    background: url("assets/images/select-pointer.svg");
 }
 
 .icon-select {
-    background: url("/assets/images/select-pointer.svg") no-repeat center center;
+    background: url("assets/images/select-pointer.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-pencil {
-    background: url("/assets/images/pencil.svg") no-repeat center center;
+    background: url("assets/images/pencil.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-line {
-    background: url("/assets/images/line.svg") no-repeat center center;
+    background: url("assets/images/line.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-rect {
-    background: url("/assets/images/rect.svg") no-repeat center center;
+    background: url("assets/images/rect.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-circle {
-    background: url("/assets/images/circle.svg") no-repeat center center;
+    background: url("assets/images/circle.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-ellipse {
-    background: url("/assets/images/ellipse.svg") no-repeat center center;
+    background: url("assets/images/ellipse.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-path {
-    background: url("/assets/images/path.svg") no-repeat center center;
+    background: url("assets/images/path.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-text {
-    background: url("/assets/images/text.svg") no-repeat center center;
+    background: url("assets/images/text.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-image {
-    background: url("/assets/images/image.svg") no-repeat center center;
+    background: url("assets/images/image.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-align-left {
-    background: url("/assets/images/align-left.svg") no-repeat center center;
+    background: url("assets/images/align-left.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-align-center {
-    background: url("/assets/images/align-center.svg") no-repeat center center;
+    background: url("assets/images/align-center.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-align-right {
-    background: url("/assets/images/align-right.svg") no-repeat center center;
+    background: url("assets/images/align-right.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-align-top {
-    background: url("/assets/images/align-top.svg") no-repeat center center;
+    background: url("assets/images/align-top.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-align-middle {
-    background: url("/assets/images/align-middle.svg") no-repeat center center;
+    background: url("assets/images/align-middle.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-align-bottom {
-    background: url("/assets/images/align-bottom.svg") no-repeat center center;
+    background: url("assets/images/align-bottom.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-flip-orizontal {
-    background: url("/assets/images/flip-orizontal.svg") no-repeat center center;
+    background: url("assets/images/flip-orizontal.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-flip-vertical {
-    background: url("/assets/images/flip-vertical.svg") no-repeat center center;
+    background: url("assets/images/flip-vertical.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-linejoin-miter {
-    background: url("/assets/images/linejoin-miter.svg") no-repeat center center;
+    background: url("assets/images/linejoin-miter.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-linejoin-round {
-    background: url("/assets/images/linejoin-round.svg") no-repeat center center;
+    background: url("assets/images/linejoin-round.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-linejoin-bevel {
-    background: url("/assets/images/linejoin-bevel.svg") no-repeat center center;
+    background: url("assets/images/linejoin-bevel.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-linecap-butt {
-    background: url("/assets/images/linecap-butt.svg") no-repeat center center;
+    background: url("assets/images/linecap-butt.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-linecap-square {
-    background: url("/assets/images/linecap-square.svg") no-repeat center center;
+    background: url("assets/images/linecap-square.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
 }
 
 .icon-linecap-round {
-    background: url("/assets/images/linecap-round.svg") no-repeat center center;
+    background: url("assets/images/linecap-round.svg") no-repeat center center;
     background-size: contain;
     height: 30px;
     width: 30px;
@@ -702,47 +704,47 @@ select#start_marker option[value="D"] {
 }
 
 .icon-switch {
-    background: url("/assets/images/switch.svg") no-repeat center center;
+    background: url("assets/images/switch.svg") no-repeat center center;
 }
 .icon-value {
-    background: url("/assets/images/value.svg") no-repeat center center;
+    background: url("assets/images/value.svg") no-repeat center center;
 }
 .icon-editvalue {
-    background: url("/assets/images/editvalue.svg") no-repeat center center;
+    background: url("assets/images/editvalue.svg") no-repeat center center;
 }
 .icon-selectvalue {
-    background: url("/assets/images/selectvalue.svg") no-repeat center center;
+    background: url("assets/images/selectvalue.svg") no-repeat center center;
 }
 .icon-progress-v {
-    background: url("/assets/images/progress-v.svg") no-repeat center center;
+    background: url("assets/images/progress-v.svg") no-repeat center center;
 }
 .icon-semaphore {
-    background: url("/assets/images/semaphore.svg") no-repeat center center;
+    background: url("assets/images/semaphore.svg") no-repeat center center;
 }
 .icon-button {
-    background: url("/assets/images/button.svg") no-repeat center center;
+    background: url("assets/images/button.svg") no-repeat center center;
 }
 .icon-chart {
-    background: url("/assets/images/chart.svg") no-repeat center center;
+    background: url("assets/images/chart.svg") no-repeat center center;
 }
 .icon-bag {
-    background: url("/assets/images/bag.svg") no-repeat center center;
+    background: url("assets/images/bag.svg") no-repeat center center;
 }
 .icon-pipe {
-    background: url("/assets/images/pipe.svg") no-repeat center center;
+    background: url("assets/images/pipe.svg") no-repeat center center;
 }
 .icon-slider {
-    background: url("/assets/images/slider.svg") no-repeat center center;
+    background: url("assets/images/slider.svg") no-repeat center center;
 }
 .icon-graphbar {
-    background: url("/assets/images/graphbar.svg") no-repeat center center;
+    background: url("assets/images/graphbar.svg") no-repeat center center;
 }
 .icon-graphpie {
-    background: url("/assets/images/graphpie.svg") no-repeat center center;
+    background: url("assets/images/graphpie.svg") no-repeat center center;
 }
 .icon-table {
-    background: url("/assets/images/table.svg") no-repeat center center;
+    background: url("assets/images/table.svg") no-repeat center center;
 }
 .icon-iframe {
-    background: url("/assets/images/iframe.svg") no-repeat center center;
+    background: url("assets/images/iframe.svg") no-repeat center center;
 }

@@ -1,54 +1,68 @@
+import { EventEmitter, Injectable, Output } from "@angular/core";
+import { Observable } from "rxjs";
 
-import { Injectable, Output, EventEmitter } from '@angular/core';
-import { Observable } from 'rxjs';
+import { TranslateService } from "@ngx-translate/core";
+import { ToastrService } from "ngx-toastr";
+import { environment } from "../../environments/environment";
+import { Utils } from "../_helpers/utils";
+import { Alarm, AlarmQuery } from "../_models/alarm";
+import { Chart } from "../_models/chart";
+import {
+    DEVICE_PREFIX,
+    Device,
+    DeviceNetProperty,
+    DeviceType,
+    DevicesUtils,
+    FuxaServer,
+    ServerTagType,
+    TAG_PREFIX,
+    Tag,
+    TagSystemType,
+} from "../_models/device";
+import { Graph } from "../_models/graph";
+import { DaqQuery, LayoutSettings, View } from "../_models/hmi";
+import { Notification } from "../_models/notification";
+import {
+    ProjectData,
+    ProjectDataCmdType,
+    UploadFile,
+} from "../_models/project";
+import { Script, ScriptMode } from "../_models/script";
+import { Text } from "../_models/text";
+import { AppService } from "./app.service";
+import { ResClientService } from "./rcgi/resclient.service";
+import { ResDemoService } from "./rcgi/resdemo.service";
+import { ResourceStorageService } from "./rcgi/resource-storage.service";
+import { ResWebApiService } from "./rcgi/reswebapi.service";
 
-import { environment } from '../../environments/environment';
-import { ProjectData, ProjectDataCmdType, UploadFile } from '../_models/project';
-import { View, LayoutSettings, DaqQuery } from '../_models/hmi';
-import { Chart } from '../_models/chart';
-import { Graph } from '../_models/graph';
-import { Alarm, AlarmQuery } from '../_models/alarm';
-import { Notification } from '../_models/notification';
-import { Script, ScriptMode } from '../_models/script';
-import { Text } from '../_models/text';
-import { Device, DeviceType, DeviceNetProperty, DEVICE_PREFIX, DevicesUtils, Tag, FuxaServer, TagSystemType, TAG_PREFIX, ServerTagType } from '../_models/device';
-import { ToastrService } from 'ngx-toastr';
-import { TranslateService } from '@ngx-translate/core';
-import { ResourceStorageService } from './rcgi/resource-storage.service';
-import { ResDemoService } from './rcgi/resdemo.service';
-import { ResClientService } from './rcgi/resclient.service';
-import { ResWebApiService } from './rcgi/reswebapi.service';
-import { AppService } from './app.service';
-import { Utils } from '../_helpers/utils';
-
-import * as FileSaver from 'file-saver';
-import { Report } from '../_models/report';
-import { ScriptService } from './script.service';
+import * as FileSaver from "file-saver";
+import { Report } from "../_models/report";
+import { ScriptService } from "./script.service";
 
 @Injectable()
 export class ProjectService {
-
     @Output() onSaveCurrent: EventEmitter<SaveMode> = new EventEmitter();
     @Output() onLoadHmi: EventEmitter<boolean> = new EventEmitter();
 
-    private projectData = new ProjectData();            // Project data
-    public AppId = '';
+    private projectData = new ProjectData(); // Project data
+    public AppId = "";
 
     public serverSettings: ServerSettings;
     private storage: ResourceStorageService;
-    public intervals: any [] = [];
+    public intervals: any[] = [];
 
-    private projectOld = '';
+    private projectOld = "";
     private ready = false;
 
-    constructor(private resewbApiService: ResWebApiService,
+    constructor(
+        private resewbApiService: ResWebApiService,
         private resDemoService: ResDemoService,
         private resClientService: ResClientService,
         private scriptService: ScriptService,
         private appService: AppService,
         private translateService: TranslateService,
-        private toastr: ToastrService) {
-
+        private toastr: ToastrService
+    ) {
         this.storage = resewbApiService;
         if (!environment.serverEnabled || appService.isDemoApp) {
             this.storage = resDemoService;
@@ -58,16 +72,19 @@ export class ProjectService {
         // console.log("mode:", environment.type);
         this.storage.getAppId = () => this.getAppId();
         this.storage.onRefreshProject = (): boolean => this.onRefreshProject();
-        this.storage.checkServer().subscribe(result => {
-            if (!environment.serverEnabled || result) {
-                this.serverSettings = result;
+        this.storage.checkServer().subscribe(
+            (result) => {
+                if (!environment.serverEnabled || result) {
+                    this.serverSettings = result;
+                    this.load();
+                }
+            },
+            (error) => {
+                console.error("project.service err: " + error);
                 this.load();
+                this.notifyServerError();
             }
-        }, error => {
-            console.error('project.service err: ' + error);
-            this.load();
-            this.notifyServerError();
-        });
+        );
     }
 
     getAppId() {
@@ -82,22 +99,31 @@ export class ProjectService {
     }
 
     onRefreshProject(): boolean {
-        this.storage.getStorageProject().subscribe(prj => {
-            if (prj) {
-                this.projectData = prj;
-                // copy to check before save
-                this.projectOld = JSON.parse(JSON.stringify(this.projectData));
-                this.ready = true;
-                this.notifyToLoadHmi();
-            } else {
-                let msg = '';
-                this.translateService.get('msg.get-project-void').subscribe((txt: string) => { msg = txt; });
-                console.warn(msg);
-                // this.notifySaveError(msg);
+        this.storage.getStorageProject().subscribe(
+            (prj) => {
+                if (prj) {
+                    this.projectData = prj;
+                    // copy to check before save
+                    this.projectOld = JSON.parse(
+                        JSON.stringify(this.projectData)
+                    );
+                    this.ready = true;
+                    this.notifyToLoadHmi();
+                } else {
+                    let msg = "";
+                    this.translateService
+                        .get("msg.get-project-void")
+                        .subscribe((txt: string) => {
+                            msg = txt;
+                        });
+                    console.warn(msg);
+                    // this.notifySaveError(msg);
+                }
+            },
+            (err) => {
+                console.error("YiSCADA onRefreshProject error", err);
             }
-        }, err => {
-            console.error('FUXA onRefreshProject error', err);
-        });
+        );
         return true;
     }
 
@@ -107,28 +133,33 @@ export class ProjectService {
      * From Local Storage, from 'assets' if demo or create a local project
      */
     private load() {
-        this.storage.getStorageProject().subscribe(prj => {
-            if (!prj && this.appService.isDemoApp) {
-                console.log('create demo');
-                this.setNewProject();
-            } else if (this.appService.isClientApp) {
-                if (!prj && (this.storage as ResClientService).isReady) {
+        this.storage.getStorageProject().subscribe(
+            (prj) => {
+                if (!prj && this.appService.isDemoApp) {
+                    console.log("create demo");
                     this.setNewProject();
+                } else if (this.appService.isClientApp) {
+                    if (!prj && (this.storage as ResClientService).isReady) {
+                        this.setNewProject();
+                    } else {
+                        this.projectData = prj;
+                    }
+                    this.ready = true;
+                    this.notifyToLoadHmi();
                 } else {
                     this.projectData = prj;
+                    // copy to check before save
+                    this.projectOld = JSON.parse(
+                        JSON.stringify(this.projectData)
+                    );
+                    this.ready = true;
+                    this.notifyToLoadHmi();
                 }
-                this.ready = true;
-                this.notifyToLoadHmi();
-            } else {
-                this.projectData = prj;
-                // copy to check before save
-                this.projectOld = JSON.parse(JSON.stringify(this.projectData));
-                this.ready = true;
-                this.notifyToLoadHmi();
+            },
+            (err) => {
+                console.error("YiSCADA load error", err);
             }
-        }, err => {
-            console.error('FUXA load error', err);
-        });
+        );
     }
 
     /**
@@ -136,56 +167,66 @@ export class ProjectService {
      */
     save(skipNotification = false): boolean {
         // check project change don't work some svg object change the order and this to check isn't easy...boooo
-        this.storage.setServerProject(this.projectData).subscribe(result => {
-            this.load();
-            if (!skipNotification) {
-                this.notifySuccessMessage('msg.project-save-success');
+        this.storage.setServerProject(this.projectData).subscribe(
+            (result) => {
+                this.load();
+                if (!skipNotification) {
+                    this.notifySuccessMessage("msg.project-save-success");
+                }
+            },
+            (err) => {
+                console.error(err);
+                var msg = "";
+                this.translateService
+                    .get("msg.project-save-error")
+                    .subscribe((txt: string) => {
+                        msg = txt;
+                    });
+                this.toastr.error(msg, "", {
+                    timeOut: 3000,
+                    closeButton: true,
+                    disableTimeOut: true,
+                });
             }
-        }, err => {
-            console.error(err);
-            var msg = '';
-            this.translateService.get('msg.project-save-error').subscribe((txt: string) => { msg = txt; });
-            this.toastr.error(msg, '', {
-                timeOut: 3000,
-                closeButton: true,
-                disableTimeOut: true
-            });
-        });
+        );
         return true;
     }
 
     saveAs() {
-        let filename = 'fuxa-project.json';
+        let filename = "fuxa-project.json";
         if (this.getProjectName()) {
             filename = `${this.getProjectName()}.json`;
         }
         let content = JSON.stringify(this.convertToSave(this.getProject()));
-        let blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        let blob = new Blob([content], { type: "text/plain;charset=utf-8" });
         FileSaver.saveAs(blob, filename);
     }
 
     exportDevices(type: string) {
-        let content = '';
-        const name = this.projectData.name || 'fuxa';
+        let content = "";
+        const name = this.projectData.name || "fuxa";
         let filename = `${name}-devices.${type}`;
-        const devices = <Device[]>Object.values(this.convertToSave(this.getDevices()));
-        if (type === 'csv') {
+        const devices = <Device[]>(
+            Object.values(this.convertToSave(this.getDevices()))
+        );
+        if (type === "csv") {
             content = DevicesUtils.devicesToCsv(devices);
-        } else {    // json
+        } else {
+            // json
             if (this.getProjectName()) {
                 filename = `${this.getProjectName()}-devices.json`;
             }
             content = JSON.stringify(devices, null, 2);
         }
-        let blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        let blob = new Blob([content], { type: "text/plain;charset=utf-8" });
         FileSaver.saveAs(blob, filename);
     }
 
     importDevices(devices: Device[]) {
         if (!devices) {
-            this.notifyError('msg.import-devices-error');
+            this.notifyError("msg.import-devices-error");
         } else {
-            devices.forEach(device => {
+            devices.forEach((device) => {
                 if (device.id && device.name) {
                     this.setDevice(device, null, null);
                 }
@@ -217,7 +258,7 @@ export class ProjectService {
     }
 
     getProjectName(): string {
-        return (this.projectData) ? this.projectData.name : null;
+        return this.projectData ? this.projectData.name : null;
     }
 
     setProjectName(name: string) {
@@ -236,29 +277,49 @@ export class ProjectService {
     setDevice(device: Device, old: Device, security?: any) {
         if (this.projectData.devices) {
             this.projectData.devices[device.id] = device;
-            this.storage.setDeviceSecurity(device.id, security).subscribe(() => {
-                this.storage.setServerProjectData(ProjectDataCmdType.SetDevice, device, this.projectData).subscribe(result => {
-                    if (old && old.id !== device.id) {
-                        this.removeDevice(old);
-                    }
-                }, err => {
+            this.storage.setDeviceSecurity(device.id, security).subscribe(
+                () => {
+                    this.storage
+                        .setServerProjectData(
+                            ProjectDataCmdType.SetDevice,
+                            device,
+                            this.projectData
+                        )
+                        .subscribe(
+                            (result) => {
+                                if (old && old.id !== device.id) {
+                                    this.removeDevice(old);
+                                }
+                            },
+                            (err) => {
+                                console.error(err);
+                                this.notifySaveError(err);
+                            }
+                        );
+                },
+                (err) => {
                     console.error(err);
                     this.notifySaveError(err);
-                });
-            }, err => {
-                console.error(err);
-                this.notifySaveError(err);
-            });
+                }
+            );
         }
     }
 
     setDeviceTags(device: Device) {
         this.projectData.devices[device.id] = device;
-        this.storage.setServerProjectData(ProjectDataCmdType.SetDevice, device, this.projectData).subscribe(result => {
-        }, err => {
-            console.error(err);
-            this.notifySaveError(err);
-        });
+        this.storage
+            .setServerProjectData(
+                ProjectDataCmdType.SetDevice,
+                device,
+                this.projectData
+            )
+            .subscribe(
+                (result) => {},
+                (err) => {
+                    console.error(err);
+                    this.notifySaveError(err);
+                }
+            );
     }
 
     /**
@@ -268,16 +329,26 @@ export class ProjectService {
      */
     removeDevice(device: Device) {
         delete this.projectData.devices[device.id];
-        this.storage.setServerProjectData(ProjectDataCmdType.DelDevice, device, this.projectData).subscribe(result => {
-        }, err => {
-            console.error(err);
-            this.notifySaveError(err);
-        });
-        this.storage.setDeviceSecurity(device.id, '').subscribe(() => {
-        }, err => {
-            console.error(err);
-            this.notifySaveError(err);
-        });
+        this.storage
+            .setServerProjectData(
+                ProjectDataCmdType.DelDevice,
+                device,
+                this.projectData
+            )
+            .subscribe(
+                (result) => {},
+                (err) => {
+                    console.error(err);
+                    this.notifySaveError(err);
+                }
+            );
+        this.storage.setDeviceSecurity(device.id, "").subscribe(
+            () => {},
+            (err) => {
+                console.error(err);
+                this.notifySaveError(err);
+            }
+        );
     }
 
     getDeviceSecurity(id: string): Observable<any> {
@@ -303,14 +374,23 @@ export class ProjectService {
         } else {
             this.projectData.hmi.views.push(view);
         }
-        this.storage.setServerProjectData(ProjectDataCmdType.SetView, view, this.projectData).subscribe(result => {
-            if (notify) {
-                this.notifySuccessMessage('msg.project-save-success');
-            }
-        }, err => {
-            console.error(err);
-            this.notifySaveError(err);
-        });
+        this.storage
+            .setServerProjectData(
+                ProjectDataCmdType.SetView,
+                view,
+                this.projectData
+            )
+            .subscribe(
+                (result) => {
+                    if (notify) {
+                        this.notifySuccessMessage("msg.project-save-success");
+                    }
+                },
+                (err) => {
+                    console.error(err);
+                    this.notifySaveError(err);
+                }
+            );
     }
 
     /**
@@ -318,9 +398,8 @@ export class ProjectService {
      * @returns
      */
     getViews(): View[] {
-        return (this.projectData) ? this.projectData.hmi.views : [];
+        return this.projectData ? this.projectData.hmi.views : [];
     }
-
 
     getViewId(name: string) {
         let views = this.getViews();
@@ -354,11 +433,19 @@ export class ProjectService {
                 break;
             }
         }
-        this.storage.setServerProjectData(ProjectDataCmdType.DelView, view, this.projectData).subscribe(result => {
-        }, err => {
-            console.error(err);
-            this.notifySaveError(err);
-        });
+        this.storage
+            .setServerProjectData(
+                ProjectDataCmdType.DelView,
+                view,
+                this.projectData
+            )
+            .subscribe(
+                (result) => {},
+                (err) => {
+                    console.error(err);
+                    this.notifySaveError(err);
+                }
+            );
     }
     //#endregion
 
@@ -368,14 +455,13 @@ export class ProjectService {
      * get hmi resource
      */
     getHmi() {
-        return (this.ready && this.projectData) ? this.projectData.hmi : null;
+        return this.ready && this.projectData ? this.projectData.hmi : null;
     }
 
     setLayout(layout: LayoutSettings) {
         this.projectData.hmi.layout = layout;
         this.saveLayout();
     }
-
 
     setLayoutTheme(theme: string) {
         this.projectData.hmi.layout.theme = theme;
@@ -390,11 +476,19 @@ export class ProjectService {
     }
 
     saveLayout() {
-        this.storage.setServerProjectData(ProjectDataCmdType.HmiLayout, this.projectData.hmi.layout, this.projectData).subscribe(result => {
-        }, err => {
-            console.error(err);
-            this.notifySaveError(err);
-        });
+        this.storage
+            .setServerProjectData(
+                ProjectDataCmdType.HmiLayout,
+                this.projectData.hmi.layout,
+                this.projectData
+            )
+            .subscribe(
+                (result) => {},
+                (err) => {
+                    console.error(err);
+                    this.notifySaveError(err);
+                }
+            );
     }
     //#endregion
 
@@ -403,7 +497,11 @@ export class ProjectService {
      * get charts resource
      */
     getCharts() {
-        return (this.projectData) ? (this.projectData.charts) ? this.projectData.charts : [] : null;
+        return this.projectData
+            ? this.projectData.charts
+                ? this.projectData.charts
+                : []
+            : null;
     }
 
     getChart(id: string) {
@@ -420,11 +518,19 @@ export class ProjectService {
      */
     setCharts(charts: Chart[]) {
         this.projectData.charts = charts;
-        this.storage.setServerProjectData(ProjectDataCmdType.Charts, charts, this.projectData).subscribe(result => {
-        }, err => {
-            console.error(err);
-            this.notifySaveError(err);
-        });
+        this.storage
+            .setServerProjectData(
+                ProjectDataCmdType.Charts,
+                charts,
+                this.projectData
+            )
+            .subscribe(
+                (result) => {},
+                (err) => {
+                    console.error(err);
+                    this.notifySaveError(err);
+                }
+            );
     }
     //#endregion
 
@@ -434,7 +540,11 @@ export class ProjectService {
      * @returns
      */
     getGraphs(): Graph[] {
-        return (this.projectData) ? (this.projectData.graphs) ? this.projectData.graphs : [] : null;
+        return this.projectData
+            ? this.projectData.graphs
+                ? this.projectData.graphs
+                : []
+            : null;
     }
 
     /**
@@ -459,11 +569,19 @@ export class ProjectService {
      */
     setGraphs(graphs: Graph[]) {
         this.projectData.graphs = graphs;
-        this.storage.setServerProjectData(ProjectDataCmdType.Graphs, graphs, this.projectData).subscribe(result => {
-        }, err => {
-            console.error(err);
-            this.notifySaveError(err);
-        });
+        this.storage
+            .setServerProjectData(
+                ProjectDataCmdType.Graphs,
+                graphs,
+                this.projectData
+            )
+            .subscribe(
+                (result) => {},
+                (err) => {
+                    console.error(err);
+                    this.notifySaveError(err);
+                }
+            );
     }
     //#endregion
 
@@ -472,7 +590,11 @@ export class ProjectService {
      * get alarms resource
      */
     getAlarms() {
-        return (this.projectData) ? (this.projectData.alarms) ? this.projectData.alarms : [] : null;
+        return this.projectData
+            ? this.projectData.alarms
+                ? this.projectData.alarms
+                : []
+            : null;
     }
 
     /**
@@ -483,7 +605,9 @@ export class ProjectService {
             if (!this.projectData.alarms) {
                 this.projectData.alarms = [];
             }
-            let exist = this.projectData.alarms.find(tx => tx.name === alarm.name);
+            let exist = this.projectData.alarms.find(
+                (tx) => tx.name === alarm.name
+            );
             if (exist) {
                 exist.property = alarm.property;
                 exist.highhigh = alarm.highhigh;
@@ -495,19 +619,28 @@ export class ProjectService {
             } else {
                 this.projectData.alarms.push(alarm);
             }
-            this.storage.setServerProjectData(ProjectDataCmdType.SetAlarm, alarm, this.projectData).subscribe(result => {
-                if (old && old.name && old.name !== alarm.name) {
-                    this.removeAlarm(old).subscribe(result => {
-                        observer.next();
-                    });
-                } else {
-                    observer.next();
-                }
-            }, err => {
-                console.error(err);
-                this.notifySaveError(err);
-                observer.error(err);
-            });
+            this.storage
+                .setServerProjectData(
+                    ProjectDataCmdType.SetAlarm,
+                    alarm,
+                    this.projectData
+                )
+                .subscribe(
+                    (result) => {
+                        if (old && old.name && old.name !== alarm.name) {
+                            this.removeAlarm(old).subscribe((result) => {
+                                observer.next();
+                            });
+                        } else {
+                            observer.next();
+                        }
+                    },
+                    (err) => {
+                        console.error(err);
+                        this.notifySaveError(err);
+                        observer.error(err);
+                    }
+                );
         });
     }
 
@@ -524,13 +657,22 @@ export class ProjectService {
                     }
                 }
             }
-            this.storage.setServerProjectData(ProjectDataCmdType.DelAlarm, alarm, this.projectData).subscribe(result => {
-                observer.next();
-            }, err => {
-                console.error(err);
-                this.notifySaveError(err);
-                observer.error(err);
-            });
+            this.storage
+                .setServerProjectData(
+                    ProjectDataCmdType.DelAlarm,
+                    alarm,
+                    this.projectData
+                )
+                .subscribe(
+                    (result) => {
+                        observer.next();
+                    },
+                    (err) => {
+                        console.error(err);
+                        this.notifySaveError(err);
+                        observer.error(err);
+                    }
+                );
         });
     }
 
@@ -552,7 +694,11 @@ export class ProjectService {
      * get notifications resource
      */
     getNotifications() {
-        return (this.projectData) ? (this.projectData.notifications) ? this.projectData.notifications : [] : null;
+        return this.projectData
+            ? this.projectData.notifications
+                ? this.projectData.notifications
+                : []
+            : null;
     }
 
     /**
@@ -563,7 +709,9 @@ export class ProjectService {
             if (!this.projectData.notifications) {
                 this.projectData.notifications = [];
             }
-            let exist = this.projectData.notifications.find(tx => tx.id === notification.id);
+            let exist = this.projectData.notifications.find(
+                (tx) => tx.id === notification.id
+            );
             if (exist) {
                 exist.name = notification.name;
                 exist.delay = notification.delay;
@@ -577,19 +725,28 @@ export class ProjectService {
             } else {
                 this.projectData.notifications.push(notification);
             }
-            this.storage.setServerProjectData(ProjectDataCmdType.SetNotification, notification, this.projectData).subscribe(result => {
-                if (old && old.id && old.id !== notification.id) {
-                    this.removeNotification(old).subscribe(result => {
-                        observer.next();
-                    });
-                } else {
-                    observer.next();
-                }
-            }, err => {
-                console.error(err);
-                this.notifySaveError(err);
-                observer.error(err);
-            });
+            this.storage
+                .setServerProjectData(
+                    ProjectDataCmdType.SetNotification,
+                    notification,
+                    this.projectData
+                )
+                .subscribe(
+                    (result) => {
+                        if (old && old.id && old.id !== notification.id) {
+                            this.removeNotification(old).subscribe((result) => {
+                                observer.next();
+                            });
+                        } else {
+                            observer.next();
+                        }
+                    },
+                    (err) => {
+                        console.error(err);
+                        this.notifySaveError(err);
+                        observer.error(err);
+                    }
+                );
         });
     }
 
@@ -599,20 +756,35 @@ export class ProjectService {
     removeNotification(notification: Notification) {
         return new Observable((observer) => {
             if (this.projectData.notifications) {
-                for (let i = 0; i < this.projectData.notifications.length; i++) {
-                    if (this.projectData.notifications[i].id === notification.id) {
+                for (
+                    let i = 0;
+                    i < this.projectData.notifications.length;
+                    i++
+                ) {
+                    if (
+                        this.projectData.notifications[i].id === notification.id
+                    ) {
                         this.projectData.notifications.splice(i, 1);
                         break;
                     }
                 }
             }
-            this.storage.setServerProjectData(ProjectDataCmdType.DelNotification, notification, this.projectData).subscribe(result => {
-                observer.next();
-            }, err => {
-                console.error(err);
-                this.notifySaveError(err);
-                observer.error(err);
-            });
+            this.storage
+                .setServerProjectData(
+                    ProjectDataCmdType.DelNotification,
+                    notification,
+                    this.projectData
+                )
+                .subscribe(
+                    (result) => {
+                        observer.next();
+                    },
+                    (err) => {
+                        console.error(err);
+                        this.notifySaveError(err);
+                        observer.error(err);
+                    }
+                );
         });
     }
     //#endregion
@@ -621,11 +793,18 @@ export class ProjectService {
         /* init all schedules from scripts with mode client */
         if (this.projectData.scripts) {
             this.projectData.scripts.forEach((script: Script) => {
-                if (script.mode == ScriptMode.CLIENT && script.scheduling && script.scheduling.interval > 0) {
-                    this.intervals.push(setInterval(
-                        () => {
-                            this.scriptService.runScript(script).subscribe(() => { });
-                        }, script.scheduling.interval * 1000));
+                if (
+                    script.mode == ScriptMode.CLIENT &&
+                    script.scheduling &&
+                    script.scheduling.interval > 0
+                ) {
+                    this.intervals.push(
+                        setInterval(() => {
+                            this.scriptService
+                                .runScript(script)
+                                .subscribe(() => {});
+                        }, script.scheduling.interval * 1000)
+                    );
                 }
             });
         }
@@ -633,18 +812,22 @@ export class ProjectService {
 
     clearScheduledScripts() {
         /* clear all intervals from scripts with client mode */
-        this.intervals.forEach(interval => {clearInterval(interval);});
+        this.intervals.forEach((interval) => {
+            clearInterval(interval);
+        });
         this.intervals = [];
     }
-
-
 
     //#region Scripts resource
     /**
      * get scripts
      */
     getScripts(): Script[] {
-        return (this.projectData) ? (this.projectData.scripts) ? this.projectData.scripts : [] : null;
+        return this.projectData
+            ? this.projectData.scripts
+                ? this.projectData.scripts
+                : []
+            : null;
     }
 
     /**
@@ -655,7 +838,9 @@ export class ProjectService {
             if (!this.projectData.scripts) {
                 this.projectData.scripts = [];
             }
-            let exist = this.projectData.scripts.find(tx => tx.id === script.id);
+            let exist = this.projectData.scripts.find(
+                (tx) => tx.id === script.id
+            );
             if (exist) {
                 exist.name = script.name;
                 exist.code = script.code;
@@ -664,19 +849,28 @@ export class ProjectService {
             } else {
                 this.projectData.scripts.push(script);
             }
-            this.storage.setServerProjectData(ProjectDataCmdType.SetScript, script, this.projectData).subscribe(result => {
-                if (old && old.id && old.id !== script.id) {
-                    this.removeScript(old).subscribe(result => {
-                        observer.next();
-                    });
-                } else {
-                    observer.next();
-                }
-            }, err => {
-                console.error(err);
-                this.notifySaveError(err);
-                observer.error(err);
-            });
+            this.storage
+                .setServerProjectData(
+                    ProjectDataCmdType.SetScript,
+                    script,
+                    this.projectData
+                )
+                .subscribe(
+                    (result) => {
+                        if (old && old.id && old.id !== script.id) {
+                            this.removeScript(old).subscribe((result) => {
+                                observer.next();
+                            });
+                        } else {
+                            observer.next();
+                        }
+                    },
+                    (err) => {
+                        console.error(err);
+                        this.notifySaveError(err);
+                        observer.error(err);
+                    }
+                );
         });
     }
 
@@ -693,13 +887,22 @@ export class ProjectService {
                     }
                 }
             }
-            this.storage.setServerProjectData(ProjectDataCmdType.DelScript, script, this.projectData).subscribe(result => {
-                observer.next();
-            }, err => {
-                console.error(err);
-                this.notifySaveError(err);
-                observer.error(err);
-            });
+            this.storage
+                .setServerProjectData(
+                    ProjectDataCmdType.DelScript,
+                    script,
+                    this.projectData
+                )
+                .subscribe(
+                    (result) => {
+                        observer.next();
+                    },
+                    (err) => {
+                        console.error(err);
+                        this.notifySaveError(err);
+                        observer.error(err);
+                    }
+                );
         });
     }
     //#endregion
@@ -709,7 +912,11 @@ export class ProjectService {
      * get reports
      */
     getReports(): Report[] {
-        return (this.projectData) ? (this.projectData.reports) ? this.projectData.reports : [] : null;
+        return this.projectData
+            ? this.projectData.reports
+                ? this.projectData.reports
+                : []
+            : null;
     }
 
     /**
@@ -720,32 +927,43 @@ export class ProjectService {
             if (!this.projectData.reports) {
                 this.projectData.reports = [];
             }
-            let exist = this.projectData.reports.find(tx => tx.id === report.id);
+            let exist = this.projectData.reports.find(
+                (tx) => tx.id === report.id
+            );
             if (exist) {
                 Utils.assign(exist, report);
             } else {
                 this.projectData.reports.push(report);
             }
-            this.storage.setServerProjectData(ProjectDataCmdType.SetReport, report, this.projectData).subscribe(result => {
-                if (old && old.id && old.id !== report.id) {
-                    this.removeReport(old).subscribe(result => {
-                        observer.next();
-                    });
-                } else {
-                    observer.next();
-                }
-            }, err => {
-                console.error(err);
-                this.notifySaveError(err);
-                observer.error(err);
-            });
+            this.storage
+                .setServerProjectData(
+                    ProjectDataCmdType.SetReport,
+                    report,
+                    this.projectData
+                )
+                .subscribe(
+                    (result) => {
+                        if (old && old.id && old.id !== report.id) {
+                            this.removeReport(old).subscribe((result) => {
+                                observer.next();
+                            });
+                        } else {
+                            observer.next();
+                        }
+                    },
+                    (err) => {
+                        console.error(err);
+                        this.notifySaveError(err);
+                        observer.error(err);
+                    }
+                );
         });
     }
 
     /**
      * remove the report from project
      */
-     removeReport(report: Report) {
+    removeReport(report: Report) {
         return new Observable((observer) => {
             if (this.projectData.reports) {
                 for (let i = 0; i < this.projectData.reports.length; i++) {
@@ -755,13 +973,22 @@ export class ProjectService {
                     }
                 }
             }
-            this.storage.setServerProjectData(ProjectDataCmdType.DelReport, report, this.projectData).subscribe(result => {
-                observer.next();
-            }, err => {
-                console.error(err);
-                this.notifySaveError(err);
-                observer.error(err);
-            });
+            this.storage
+                .setServerProjectData(
+                    ProjectDataCmdType.DelReport,
+                    report,
+                    this.projectData
+                )
+                .subscribe(
+                    (result) => {
+                        observer.next();
+                    },
+                    (err) => {
+                        console.error(err);
+                        this.notifySaveError(err);
+                        observer.error(err);
+                    }
+                );
         });
     }
     //#endregion
@@ -771,7 +998,11 @@ export class ProjectService {
      * get texts resource
      */
     getTexts() {
-        return (this.projectData) ? (this.projectData.texts) ? this.projectData.texts : [] : null;
+        return this.projectData
+            ? this.projectData.texts
+                ? this.projectData.texts
+                : []
+            : null;
     }
 
     /**
@@ -782,21 +1013,30 @@ export class ProjectService {
         if (!this.projectData.texts) {
             this.projectData.texts = [];
         }
-        let exist = this.projectData.texts.find(tx => tx.name === text.name);
+        let exist = this.projectData.texts.find((tx) => tx.name === text.name);
         if (exist) {
             exist.group = text.group;
             exist.value = text.value;
         } else {
             this.projectData.texts.push(text);
         }
-        this.storage.setServerProjectData(ProjectDataCmdType.SetText, text, this.projectData).subscribe(result => {
-            if (old && old.name && old.name !== text.name) {
-                this.removeText(old);
-            }
-        }, err => {
-            console.error(err);
-            this.notifySaveError(err);
-        });
+        this.storage
+            .setServerProjectData(
+                ProjectDataCmdType.SetText,
+                text,
+                this.projectData
+            )
+            .subscribe(
+                (result) => {
+                    if (old && old.name && old.name !== text.name) {
+                        this.removeText(old);
+                    }
+                },
+                (err) => {
+                    console.error(err);
+                    this.notifySaveError(err);
+                }
+            );
     }
 
     /**
@@ -812,11 +1052,19 @@ export class ProjectService {
                 }
             }
         }
-        this.storage.setServerProjectData(ProjectDataCmdType.DelText, text, this.projectData).subscribe(result => {
-        }, err => {
-            console.error(err);
-            this.notifySaveError(err);
-        });
+        this.storage
+            .setServerProjectData(
+                ProjectDataCmdType.DelText,
+                text,
+                this.projectData
+            )
+            .subscribe(
+                (result) => {},
+                (err) => {
+                    console.error(err);
+                    this.notifySaveError(err);
+                }
+            );
     }
     //#endregion
 
@@ -827,42 +1075,56 @@ export class ProjectService {
     }
 
     private notifySaveError(err: any) {
-        console.error('FUXA notifySaveError error', err);
+        console.error("YiSCADA notifySaveError error", err);
         let msg = null;
-        this.translateService.get('msg.project-save-error').subscribe((txt: string) => { msg = txt; });
+        this.translateService
+            .get("msg.project-save-error")
+            .subscribe((txt: string) => {
+                msg = txt;
+            });
         if (err.status === 401) {
-            this.translateService.get('msg.project-save-unauthorized').subscribe((txt: string) => { msg = txt; });
+            this.translateService
+                .get("msg.project-save-unauthorized")
+                .subscribe((txt: string) => {
+                    msg = txt;
+                });
         }
         if (msg) {
-            this.toastr.error(msg, '', {
+            this.toastr.error(msg, "", {
                 timeOut: 3000,
                 closeButton: true,
-                disableTimeOut: true
+                disableTimeOut: true,
             });
         }
     }
 
     private notifyServerError() {
-        console.error('FUXA notifyServerError error');
+        console.error("YiSCADA notifyServerError error");
         let msg = null;
-        this.translateService.get('msg.server-connection-error').subscribe((txt: string) => { msg = txt; });
+        this.translateService
+            .get("msg.server-connection-error")
+            .subscribe((txt: string) => {
+                msg = txt;
+            });
         if (msg) {
-            this.toastr.error(msg, '', {
+            this.toastr.error(msg, "", {
                 timeOut: 3000,
                 closeButton: true,
-                disableTimeOut: true
+                disableTimeOut: true,
             });
         }
     }
 
     private notifyError(msgCode: string) {
-        this.translateService.get(msgCode).subscribe((txt: string) => { msgCode = txt; });
+        this.translateService.get(msgCode).subscribe((txt: string) => {
+            msgCode = txt;
+        });
         if (msgCode) {
-            console.error(`FUXA Error: ${msgCode}`);
-            this.toastr.error(msgCode, '', {
+            console.error(`YiSCADA Error: ${msgCode}`);
+            this.toastr.error(msgCode, "", {
                 timeOut: 3000,
                 closeButton: true,
-                disableTimeOut: true
+                disableTimeOut: true,
             });
         }
     }
@@ -918,7 +1180,7 @@ export class ProjectService {
     }
 
     getServer(): Device {
-        return (this.projectData) ? this.projectData.server : null;
+        return this.projectData ? this.projectData.server : null;
     }
 
     // getDevices(): any {
@@ -931,7 +1193,9 @@ export class ProjectService {
             result = this.projectData.devices;
             if (!result[this.projectData.server.id]) {
                 // add server as device to use in script and logic
-                let server: Device = JSON.parse(JSON.stringify(this.projectData.server));
+                let server: Device = JSON.parse(
+                    JSON.stringify(this.projectData.server)
+                );
                 server.enabled = true;
                 server.tags = {};
                 result[server.id] = server;
@@ -942,7 +1206,7 @@ export class ProjectService {
 
     getDeviceFromId(id: string): any {
         let result;
-        Object.keys(this.projectData.devices).forEach(k => {
+        Object.keys(this.projectData.devices).forEach((k) => {
             if (this.projectData.devices[k].id === id) {
                 result = this.projectData.devices[k];
             }
@@ -970,21 +1234,30 @@ export class ProjectService {
     }
 
     /**
-     * Check to add or remove system Tags, example connection status to add in device FUXA server
+     * Check to add or remove system Tags, example connection status to add in device YiSCADA server
      */
     checkSystemTags() {
-        let devices = Object.values(this.projectData.devices).filter((device: Device) => device.id !== FuxaServer.id);
+        let devices = Object.values(this.projectData.devices).filter(
+            (device: Device) => device.id !== FuxaServer.id
+        );
         let fuxaServer = <Device>this.projectData.devices[FuxaServer.id];
         if (fuxaServer) {
             devices.forEach((device: Device) => {
-                if (!Object.values(fuxaServer.tags).find((tag: Tag) => tag.sysType === TagSystemType.deviceConnectionStatus && tag.memaddress === device.id)) {
+                if (
+                    !Object.values(fuxaServer.tags).find(
+                        (tag: Tag) =>
+                            tag.sysType ===
+                                TagSystemType.deviceConnectionStatus &&
+                            tag.memaddress === device.id
+                    )
+                ) {
                     let tag = new Tag(Utils.getGUID(TAG_PREFIX));
-                    tag.name = device.name + ' Connection Status';
-                    tag.label = device.name + ' Connection Status';
+                    tag.name = device.name + " Connection Status";
+                    tag.label = device.name + " Connection Status";
                     tag.type = ServerTagType.number;
                     tag.memaddress = device.id;
                     tag.sysType = TagSystemType.deviceConnectionStatus;
-                    tag.init = tag.value = '';
+                    tag.init = tag.value = "";
                     fuxaServer.tags[tag.id] = tag;
                 }
             });
@@ -1010,13 +1283,11 @@ export class ProjectService {
         } else {
             return false;
         }
-
     }
 
     private _deepEquals(x, y) {
         if (JSON.stringify(x) === JSON.stringify(y)) {
             return true; // if both x and y are null or undefined and exactly the same
-
         } else {
             try {
                 for (const p in x) {
@@ -1026,11 +1297,11 @@ export class ProjectService {
                     if (!y.hasOwnProperty(p)) {
                         return false; // allows to compare x[ p ] and y[ p ] when set to undefined
                     }
-                    if (p === 'svgcontent') {
+                    if (p === "svgcontent") {
                         // the xml have to be transform in json
-                        const parser = new DOMParser();  // initialize dom parser
-                        const aDOM = parser.parseFromString(x[p], 'text/xml');
-                        const bDOM = parser.parseFromString(y[p], 'text/xml');
+                        const parser = new DOMParser(); // initialize dom parser
+                        const aDOM = parser.parseFromString(x[p], "text/xml");
+                        const bDOM = parser.parseFromString(y[p], "text/xml");
                         let a = this._xml2json(aDOM);
                         let b = this._xml2json(bDOM);
                         return this._deepEquals(a, b);
@@ -1063,16 +1334,19 @@ export class ProjectService {
         // Create the return object
         var obj = {};
 
-        if (xml.nodeType == 1) { // element
+        if (xml.nodeType == 1) {
+            // element
             // do attributes
             if (xml.attributes.length > 0) {
-                obj['@attributes'] = {};
+                obj["@attributes"] = {};
                 for (var j = 0; j < xml.attributes.length; j++) {
                     var attribute = xml.attributes.item(j);
-                    obj['@attributes'][attribute.nodeName] = attribute.nodeValue;
+                    obj["@attributes"][attribute.nodeName] =
+                        attribute.nodeValue;
                 }
             }
-        } else if (xml.nodeType == 3) { // text
+        } else if (xml.nodeType == 3) {
+            // text
             obj = xml.nodeValue;
         }
 
@@ -1081,10 +1355,10 @@ export class ProjectService {
             for (var i = 0; i < xml.childNodes.length; i++) {
                 var item = xml.childNodes.item(i);
                 var nodeName = item.nodeName;
-                if (typeof (obj[nodeName]) == 'undefined') {
+                if (typeof obj[nodeName] == "undefined") {
                     obj[nodeName] = this._xml2json(item);
                 } else {
-                    if (typeof (obj[nodeName].push) == 'undefined') {
+                    if (typeof obj[nodeName].push == "undefined") {
                         var old = obj[nodeName];
                         obj[nodeName] = [];
                         obj[nodeName].push(old);
@@ -1097,8 +1371,10 @@ export class ProjectService {
     }
 
     private notifySuccessMessage(msgKey: string) {
-        var msg = '';
-        this.translateService.get(msgKey).subscribe((txt: string) => { msg = txt; });
+        var msg = "";
+        this.translateService.get(msgKey).subscribe((txt: string) => {
+            msg = txt;
+        });
         this.toastr.success(msg);
     }
 }
@@ -1111,5 +1387,5 @@ export class ServerSettings {
 export enum SaveMode {
     Current,
     Save,
-    SaveAs
+    SaveAs,
 }

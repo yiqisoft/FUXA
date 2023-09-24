@@ -1,41 +1,53 @@
-import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpHeaders } from "@angular/common/http";
+import { Injectable } from "@angular/core";
+import { Observable } from "rxjs";
 
-import { EndPointApi } from '../_helpers/endpointapi';
-import { User } from '../_models/user';
-import { environment } from '../../environments/environment';
-import { ToastrService } from 'ngx-toastr';
-import { TranslateService } from '@ngx-translate/core';
+import { TranslateService } from "@ngx-translate/core";
+import { ToastrService } from "ngx-toastr";
+import { environment } from "../../environments/environment";
+import { EndPointApi } from "../_helpers/endpointapi";
+import { User } from "../_models/user";
 
 @Injectable()
 export class UserService {
-
     private endPointConfig: string = EndPointApi.getURL();
 
-    constructor(private http: HttpClient,
+    constructor(
+        private http: HttpClient,
         private translateService: TranslateService,
-        private toastr: ToastrService) {
-
-    }
+        private toastr: ToastrService
+    ) {}
 
     getUsers(user: any): Observable<any> {
-        let header = new HttpHeaders({ 'Content-Type': 'application/json' });
+        let header = new HttpHeaders({ "Content-Type": "application/json" });
         let params = user;
-        return this.http.get<any>(this.endPointConfig + '/api/users', { headers: header, params: params });
+        return this.http.get<any>(this.endPointConfig + "/scada/api/users", {
+            headers: header,
+            params: params,
+        });
     }
 
     setUser(user: User) {
         return new Observable((observer) => {
             if (environment.serverEnabled) {
-                let header = new HttpHeaders({ 'Content-Type': 'application/json' });
-                this.http.post<any>(this.endPointConfig + '/api/users', { headers: header, params: user }).subscribe(result => {
-                    observer.next();
-                }, err => {
-                    console.error(err);
-                    this.notifySaveError();
-                    observer.error(err);
+                let header = new HttpHeaders({
+                    "Content-Type": "application/json",
                 });
+                this.http
+                    .post<any>(this.endPointConfig + "/scada/api/users", {
+                        headers: header,
+                        params: user,
+                    })
+                    .subscribe(
+                        (result) => {
+                            observer.next();
+                        },
+                        (err) => {
+                            console.error(err);
+                            this.notifySaveError();
+                            observer.error(err);
+                        }
+                    );
             } else {
                 observer.next();
             }
@@ -45,14 +57,24 @@ export class UserService {
     removeUser(user: User) {
         return new Observable((observer) => {
             if (environment.serverEnabled) {
-                let header = new HttpHeaders({ 'Content-Type': 'application/json' });
-                this.http.delete<any>(this.endPointConfig + '/api/users', { headers: header, params: {param: user.username} }).subscribe(result => {
-                    observer.next();
-                }, err => {
-                    console.error(err);
-                    this.notifySaveError();
-                    observer.error(err);
+                let header = new HttpHeaders({
+                    "Content-Type": "application/json",
                 });
+                this.http
+                    .delete<any>(this.endPointConfig + "/scada/api/users", {
+                        headers: header,
+                        params: { param: user.username },
+                    })
+                    .subscribe(
+                        (result) => {
+                            observer.next();
+                        },
+                        (err) => {
+                            console.error(err);
+                            this.notifySaveError();
+                            observer.error(err);
+                        }
+                    );
             } else {
                 observer.next();
             }
@@ -61,12 +83,16 @@ export class UserService {
 
     //#region Notify
     private notifySaveError() {
-        let msg = '';
-        this.translateService.get('msg.users-save-error').subscribe((txt: string) => { msg = txt; });
-        this.toastr.error(msg, '', {
+        let msg = "";
+        this.translateService
+            .get("msg.users-save-error")
+            .subscribe((txt: string) => {
+                msg = txt;
+            });
+        this.toastr.error(msg, "", {
             timeOut: 3000,
             closeButton: true,
-            disableTimeOut: true
+            disableTimeOut: true,
         });
     }
     //#endregion
